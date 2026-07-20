@@ -11,6 +11,7 @@
 .vscode/.browse.VC.db
 .vscode/.cmake.api/
 .vscode/.pins.json
+
 # Не игнорируем сам extensions.json, но скрываем внутренний кэш
 .vscode/extensions.json
 .vscode/launch.json
