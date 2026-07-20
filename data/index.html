@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroNode — Автоматический полив</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+</head>
+<body>
+
+    <header>
+        <h1>HydroNode Dashboard</h1>
+        <div id="status-bar">
+            <span>Статус Wi-Fi: <strong id="net-status">STA</strong></span> | 
+            <span>Время NTP: <strong id="ntp-time">--:--:--</strong></span>
+        </div>
+    </header>
+
+    <nav>
+        <button class="nav-btn active" onclick="openTab('dashboard')">Главная</button>
+        <button class="nav-btn" onclick="openTab('schedule')">Расписание</button>
+        <button class="nav-btn" onclick="openTab('network')">Сеть</button>
+    </nav>
+
+    <main>
+        <section id="dashboard" class="tab-content active">
+            <h2>Текущее состояние</h2>
+            <div class="card">
+                <p>Состояние насоса: <span id="pump-state" class="state-off">Выключен</span></p>
+                <!-- Кнопка мгновенного ручного включения/выключения полива -->
+                <button id="pump-toggle-btn" class="btn btn-primary">Включить вручную</button>
+            </div>
+        </section>
+        <section id="schedule" class="tab-content">
+            <h2>Настройка полива по ячейкам</h2>
+            <form id="schedule-form">
+                <table id="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>Номер ячейки</th>
+                            <th>Время включения</th>
+                            <th>Объем воды (мл) / Время работы</th>
+                            <th>Активен</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Строки таблицы будут динамически создаваться через script.js -->
+                    </tbody>
+                </table>
+                <button type="submit" class="btn btn-success">Сохранить расписание</button>
+            </form>
+        </section>
+        <section id="network" class="tab-content">
+            <h2>Настройки Wi-Fi соединения</h2>
+            <form id="wifi-form">
+                <div class="form-group">
+                    <label for="wifi-mode">Режим работы:</label>
+                    <select id="wifi-mode" name="wifi_mode">
+                        <option value="STA">Подключение к роутеру (STA)</option>
+                        <option value="AP">Собственная точка доступа (AP)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="wifi-ssid">Имя сети (SSID):</label>
+                    <input type="text" id="wifi-ssid" name="ssid" placeholder="Введите название Wi-Fi">
+                </div>
+
+                <div class="form-group">
+                    <label for="wifi-pass">Пароль:</label>
+                    <input type="password" id="wifi-pass" name="password" placeholder="Введите пароль">
+                </div>
+
+                <button type="submit" class="btn btn-success">Применить и перезагрузить</button>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 HydroNode Project. Разработано на базе ESP8266.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
