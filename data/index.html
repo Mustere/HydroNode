@@ -10,38 +10,87 @@
 <body>
 
     <header>
-        <h1>HydroNode Dashboard</h1>
+        <h1>HydroNode Pump Control</h1>
         <div id="status-bar">
             <span>Статус Wi-Fi: <strong id="net-status">STA</strong></span> | 
             <span>Время NTP: <strong id="ntp-time">--:--:--</strong></span>
         </div>
     </header>
 
-    <nav>
+    <!-- <nav>
         <button class="nav-btn active" onclick="openTab('dashboard')">Главная</button>
         <button class="nav-btn" onclick="openTab('schedule')">Расписание</button>
         <button class="nav-btn" onclick="openTab('network')">Сеть</button>
-    </nav>
+    </nav> -->
 
     <main>
-        <section id="dashboard" class="tab-content active">
-            <h2>Текущее состояние</h2>
-            <div class="card">
-                <p>Состояние насоса: <span id="pump-state" class="state-off">Выключен</span></p>
-                <!-- Кнопка мгновенного ручного включения/выключения полива -->
-                <button id="pump-toggle-btn" class="btn btn-primary">Включить вручную</button>
+        <!--
+        хорошо смотрится на пк, сделать сворачивание обоих контейнеров по
+        одной кнопке, на моб устройствах слать списком без flex,
+        разобраться с таблицей расписания на моб устройствах, не влезает.
+        -->
+        <div class="tab-content active">
+            <div class="container-header">
+                <h2>Управление системой</h2>
+                <button class="btn-collapse">↑↓</button>
             </div>
-        </section>
-        <section id="schedule" class="tab-content">
-            <h2>Настройка полива по ячейкам</h2>
+            <div class="tab-twice">
+                <section id="network">
+                    <div class="container-header">
+                        <h2>Настройки Wi-Fi соединения</h2>
+                    </div>
+                    <form id="wifi-form">
+                        <div class="form-group">
+                            <label for="wifi-mode">Режим работы:</label>
+                            <div class="select-wrapper">
+                                <select id="wifi-mode" name="wifi_mode">
+                                    <option value="STA">Клиент (STA)</option>
+                                    <option value="AP">Точка доступа (AP)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="wifi-ssid">Имя сети (SSID):</label>
+                            <input type="text" id="wifi-ssid" name="ssid" placeholder="Введите название Wi-Fi">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="wifi-pass">Пароль:</label>
+                            <input type="password" id="wifi-pass" name="password" placeholder="Введите пароль">
+                        </div>
+
+                        <button type="submit" class="btn btn-success" style="margin-top: 15px;">Применить и перезагрузить</button>
+                    </form>
+                </section>
+                <section id="pump-control">
+                    <h2>Управление насосом</h2>
+                    <div class="card">
+                        <p>Состояние насоса: <span id="watering-status" class="state-off">Выключен</span></p>
+                        <div class="form-group" style="margin-top: 15px; margin-bottom: 15px;">
+                            <label for="manual-volume-input" style="width: 50%;">Объем полива (мл):</label>
+                            <input type="number" id="manual-volume-input" min="0" max="9999" placeholder="Например: 250">
+                        </div>
+                        <button id="manual-toggle-btn" class="btn btn-primary">Запустить полив</button>
+                    </div>
+                </section>
+            </div>
+        </div>
+        <section id="schedule" class="tab-content active">
+            <div class="container-header">
+                <h2>Расписание</h2>
+                <button class="btn btn-add">+ Добавить правило</button>
+            </div>
             <form id="schedule-form">
                 <table id="schedule-table">
                     <thead>
                         <tr>
-                            <th>Номер ячейки</th>
+                            <th>№</th>
+                            <th>День недели</th>
                             <th>Время включения</th>
-                            <th>Объем воды (мл) / Время работы</th>
+                            <th>Объем воды (мл)</th>
                             <th>Активен</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -51,34 +100,10 @@
                 <button type="submit" class="btn btn-success">Сохранить расписание</button>
             </form>
         </section>
-        <section id="network" class="tab-content">
-            <h2>Настройки Wi-Fi соединения</h2>
-            <form id="wifi-form">
-                <div class="form-group">
-                    <label for="wifi-mode">Режим работы:</label>
-                    <select id="wifi-mode" name="wifi_mode">
-                        <option value="STA">Подключение к роутеру (STA)</option>
-                        <option value="AP">Собственная точка доступа (AP)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="wifi-ssid">Имя сети (SSID):</label>
-                    <input type="text" id="wifi-ssid" name="ssid" placeholder="Введите название Wi-Fi">
-                </div>
-
-                <div class="form-group">
-                    <label for="wifi-pass">Пароль:</label>
-                    <input type="password" id="wifi-pass" name="password" placeholder="Введите пароль">
-                </div>
-
-                <button type="submit" class="btn btn-success">Применить и перезагрузить</button>
-            </form>
-        </section>
     </main>
 
     <footer>
-        <p>&copy; 2026 HydroNode Project. Разработано на базе ESP8266.</p>
+        <p>&copy; 2026 Mustere/HydroNode</p>
     </footer>
 
     <script src="script.js"></script>

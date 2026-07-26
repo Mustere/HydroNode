@@ -1,10 +1,12 @@
 :root {
-    --bg-color: #f4f6f9;
+    --bg-color: #f0f0f0;
     --panel-bg: #ffffff;
     --text-color: #333333;
     --text-muted: #666666;
-    --primary-color: #2ecc71; /* Зеленый "растительный" акцент */
+    --primary-color: #2ecc71;
     --primary-hover: #27ae60;
+    --additional-color: #09cbcf;
+    --additional-color-hover: #0ba7aa;
     --danger-color: #e74c3c;
     --border-color: #dddddd;
     --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -18,6 +20,8 @@
         --text-muted: #aaaaaa;
         --primary-color: #2fa561;
         --primary-hover: #278b51;
+        --additional-color: #19bcbf;
+        --additional-color-hover: #0ba7aa;
         --danger-color: #cf6679;
         --border-color: #333333;
         --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
@@ -38,6 +42,8 @@ body {
     line-height: 1.6;
     padding: 10px;
     transition: background-color 0.3s, color 0.3s;
+    width: 80%;
+    margin: 0 auto; 
 }
 
 header {
@@ -66,53 +72,163 @@ nav {
     color: var(--text-color);
     font-weight: bold;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 15px;
     box-shadow: var(--shadow);
     transition: 0.2s;
 }
 
 .nav-btn.active {
     background-color: var(--primary-color);
-    color: #ffffff;
+    color: var(--panel-bg);
 }
 
 .tab-content {
     display: none; /* Скрываем все вкладки по умолчанию */
+    background: var(--panel-bg);
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
 }
 
 .tab-content.active {
     display: block; /* Показываем только активную */
 }
+.tab-twice{
+    gap: 35px;
+    display: flex;
+    justify-content:space-between;
+}
+h2 { font-size: 1.2rem; }
+.container-header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.tab-content.active.collapsed .container-header {
+    margin-bottom: 0px;
+}
+.tab-twice {
+    display: flex;
+    gap: 15px;
+    align-items: stretch;
+}
 
-h2 { font-size: 1.2rem; margin-bottom: 15px; }
+#network, #pump-control {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+}
+#wifi-form, #pump-control .card {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Заполняют всю высоту родителя */
+}
+#wifi-form .form-group:nth-last-of-type(1),
+#pump-control .form-group {
+    margin-bottom: auto !important; /* Авто-отступ снизу прижимает кнопки к полу */
+}
+@media (max-width: 768px) {
+    .tab-twice {
+        flex-direction: column;
+    }
 
-.card {
+    #network, 
+    #pump-control {
+        width: 100%;
+    }
+    #schedule-form {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 15px;
+    }
+
+    #schedule-table {
+        width: 100%;
+        max-width: 500px;
+        margin-bottom: 10px;
+    }
+
+    #schedule-table th, 
+    #schedule-table td {
+        padding: 8px 6px; /* Уменьшаем отступы в ячейках */
+        font-size: 0.85rem; /* Чуть уменьшаем шрифт */
+    }
+
+    #schedule-table input[type="time"] {
+        max-width: 85px;
+        padding: 6px;
+    }
+
+    #schedule-table input[type="number"] {
+        max-width: 70px;
+        padding: 6px;
+    }
+
+    #schedule-table .select-wrapper {
+        max-width: 110px;
+    }
+
+    #schedule-table .select-wrapper select {
+        padding: 6px 22px 6px 6px !important;
+        font-size: 0.85rem;
+    }
+
+    #schedule-table .select-wrapper::after {
+        right: 8px;
+    }
+    #schedule-form::-webkit-scrollbar {
+        display: none;
+    }
+
+}
+/* .card {
     background-color: var(--panel-bg);
     padding: 20px;
-    border-radius: 12px;
+    border-radius: 15px;
     box-shadow: var(--shadow);
     margin-bottom: 20px;
-}
+} */
 
 /* --- ТАБЛИЦА РАСПИСАНИЯ --- */
 table {
-    width: 100%;
+    width: 100%;/* Настраиваем сетку/строку для двух панелей */
+.tab-twice {
+    display: flex;
+    gap: 15px;
+    align-items: stretch; /* Важно: заставляет обе секции быть строго одинаковой высоты */
+}
+
+/* Форму Wi-Fi и карточку насоса растягиваем на 100% высоты секций */
+#wifi-form, #pump-control .card {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Заполняют всю высоту родителя */
+}
+
+/* Последнюю перед кнопкой группу инпутов заставляем выталкивать кнопку вниз */
+#wifi-form .form-group:nth-last-of-type(1),
+#pump-control .form-group {
+    margin-bottom: auto !important; /* Авто-отступ снизу прижимает кнопки к полу */
+}
+
     border-collapse: collapse;
     background-color: var(--panel-bg);
-    border-radius: 8px;
+    border-radius: 15px;
     overflow: hidden;
-    box-shadow: var(--shadow);
     margin-bottom: 15px;
 }
 
 th, td {
     padding: 12px;
-    text-align: left;
+    text-align: center;
     border-bottom: 1px solid var(--border-color);
 }
 
 th {
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: var(--bg-color);
     font-weight: 600;
 }
 
@@ -121,6 +237,7 @@ th {
 }
 
 .form-group {
+    display: flex;
     margin-bottom: 15px;
 }
 
@@ -129,6 +246,8 @@ label {
     margin-bottom: 5px;
     font-size: 0.9rem;
     color: var(--text-muted);
+    width: 30%;
+    align-content: center;
 }
 
 input[type="text"],
@@ -136,37 +255,176 @@ input[type="password"],
 select,
 input[type="time"],
 input[type="number"] {
-    width: 100%;
+    width: 70%;
     padding: 10px;
     border: 1px solid var(--border-color);
-    background-color: var(--bg-color);
+    background-color: var(--panel-bg);
     color: var(--text-color);
-    border-radius: 6px;
+    border-radius: 15px;
     font-size: 1rem;
 }
 
 .btn {
     display: inline-block;
     width: 100%;
-    padding: 12px;
+    padding: 15px;
     border: none;
-    border-radius: 8px;
+    border-radius: 15px;
     font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.5s;
     text-align: center;
 }
-
-.btn-primary { background-color: var(--primary-color); color: #ffffff; }
-.btn-primary:hover { background-color: var(--primary-hover); }
+.btn-add { background-color: var(--additional-color); color: #ffffff; width: 30%; }
+.btn-add:hover { background-color: var(--additional-color-hover); }
 
 .btn-success { background-color: var(--primary-color); color: #ffffff; }
 .btn-success:hover { background-color: var(--primary-hover); }
+.btn-collapse{ width: 4em; height: 4em; background: none; border: none; cursor: pointer; color: var(--text-color); }
+
+.btn-delete {
+    width: 40px;
+    height: 40px;
+
+    border: none;
+    border-radius: 10px;
+
+    background-color: var(--danger-color);
+    color: white;
+
+    font-size: 1.1rem;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.btn-delete:hover {
+    opacity: 0.8;
+}
+
+.btn-delete:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+#schedule-table select,
+#schedule-table input {
+    width: 100%;
+    min-width: 100px;
+}
+
+/* Контейнер-обертка для позиционирования новой стрелки */
+.select-wrapper {
+    position: relative;
+    width: 70%;
+}
+
+/* Сам выпадающий список */
+.select-wrapper select {
+    width: 100%;
+    padding: 10px 45px 10px 12px !important; /* Отступ справа, чтобы текст не заезжал на стрелку */
+    border: 1px solid var(--border-color);
+    background-color: var(--panel-bg);
+    color: var(--text-color);
+    border-radius: 15px;
+    font-size: 1rem;
+    cursor: pointer;
+
+    /* Отключаем стандартную стрелку */
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+}
+
+/* Скрываем стрелку в IE/Edge */
+.select-wrapper select::-ms-expand {
+    display: none;
+}
+
+/* РИСУЕМ НОВУЮ СТРЕЛКУ ЧЕРЕЗ CSS ТРЕУГОЛЬНИК */
+.select-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    
+    /* --- ВОТ ЗДЕСЬ МЫ ДВИГАЕМ СТРЕЛКУ ВЛЕВО --- */
+    right: 28px; /* Увеличьте это число, чтобы сдвинуть стрелку еще дальше влево */
+    
+    transform: translateY(-50%);
+    
+    /* Строим треугольник, направленный вниз */
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--text-muted); /* Цвет стрелки подстраивается под тему */
+    
+    pointer-events: none; /* Клик сквозь стрелку будет открывать список */
+}
+
+/* Эффект фокуса */
+.select-wrapper select:focus {
+    outline: 1.5px solid black;
+}
 
 .state-off { color: var(--danger-color); font-weight: bold; }
 .state-on { color: var(--primary-color); font-weight: bold; }
 
+input[type="checkbox"].rule-active {
+    position: relative;
+    width: 46px !important;
+    height: 24px !important;
+    max-width: 46px !important;
+    max-height: 24px !important;
+    min-width: 46px !important;
+    min-height: 24px !important;
+    
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: #ccc;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    outline: none;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+input[type="checkbox"].rule-active::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s;
+}
+
+@media (prefers-color-scheme: dark) {
+    input[type="checkbox"].rule-active {
+        background-color: #444444;
+    }
+}
+
+input[type="checkbox"].rule-active:checked {
+    background-color: var(--primary-color);
+}
+
+input[type="checkbox"].rule-active:checked::before {
+    transform: translateX(22px);
+}
+td:has(input[type="checkbox"].rule-active) {
+    text-align: center;
+    vertical-align: middle;
+}
 footer {
     text-align: center;
     margin-top: 30px;
