@@ -137,9 +137,23 @@ h2 { font-size: 1.2rem; }
 }
 
 #wifi-form .form-group:nth-last-of-type(1),
-#pump-control .form-group,
-#ota-form .form-group {
+#pump-control .form-group {
     margin-bottom: auto !important;
+}
+
+#ota-progress-container{
+    display: none;
+    width: 100%;
+    background: var(--bg-color);
+    border-radius: 8px; margin-bottom: 15px;
+    overflow: hidden;
+}
+
+#ota-progress-bar{
+    width: 0%;
+    height: 8px;
+    background: var(--primary-color);
+    transition: width 0.1s linear;
 }
 
 @media (max-width: 768px) {

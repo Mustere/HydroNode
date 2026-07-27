@@ -568,8 +568,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!file) return;
 
         // Формируем данные формы для отправки бинарника
-        const formData = new FormData();
-        formData.append('update', file);
+        //const formData = new FormData();
+        //formData.append('update', file);
+        xhr.open('POST', '/api/update');
+        xhr.setRequestHeader('Content-Type', 'application/octet-stream'); 
+        xhr.send(file);
 
         // Используем XMLHttpRequest для отслеживания прогресса загрузки по сети
         const xhr = new XMLHttpRequest();
