@@ -5,6 +5,7 @@
 #include "PumpManager.h"
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFi.h>
+#include <Updater.h>
 
 // Определение глобальных объектов
 AsyncWebServer server(80);
@@ -76,7 +77,7 @@ void initWebServer() {
     server.begin();
     Serial.println("[Web] HTTP-сервер успешно запущен");
 
-        // API: Отдача расписания для динамической генерации строк таблицы в JS
+    // API: Отдача расписания для динамической генерации строк таблицы в JS
     server.on("/api/get-schedule", HTTP_GET, [](AsyncWebServerRequest *request) {
     JsonDocument doc;
     JsonArray arr = doc["schedule"].to<JsonArray>(); 
@@ -157,6 +158,59 @@ void initWebServer() {
         }
 
         request->send(200, "application/json", "{\"status\":\"ok\",\"pump_active\":true}");
+    });
+
+    // API: Беспроводное обновление прошивки (Web OTA)
+    server.on("/api/update", HTTP_POST, [](AsyncWebServerRequest *request) {
+        // Этот коллбек вызывается ПОСЛЕ завершения загрузки всего файла
+        bool updateError = Update.hasError();
+        
+        // Формируем HTTP-ответ
+        AsyncWebServerResponse *response = request->beginResponse(
+            updateError ? 500 : 200, 
+            "application/json", 
+            updateError ? "{\"status\":\"error\",\"message\":\"Ошибка записи во Flash!\"}" 
+                        : "{\"status\":\"ok\",\"message\":\"Прошивка загружена. Перезагрузка...\"}"
+        );
+        response->addHeader("Connection", "close");
+        request->send(response);
+        
+        // Если ошибок нет, запускаем отложенный ребут микроконтроллера
+        if (!updateError) {
+            Serial.println("[OTA] Обновление успешно завершено. Запрос ребута...");
+            requestReboot();
+        }
+    }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+        // Этот коллбек обрабатывает файл КУСКАМИ (потоком) в процессе загрузки
+        if (!index) {
+            Serial.printf("[OTA] Старт обновления. Файл: %s\n", filename.c_str());
+            
+            // Переводим Updater в асинхронный режим работы
+            Update.runAsync(true);
+            
+            // Рассчитываем максимальный доступный размер под прошивку во Flash
+            uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+            
+            if (!Update.begin(maxSketchSpace, U_FLASH)) { // U_FLASH указывает, что шьем код прошивки
+                Update.printError(Serial);
+            }
+        }
+        
+        // Пишем текущий кусок данных во флеш-память, если нет ошибок
+        if (!Update.hasError()) {
+            if (Update.write(data, len) != len) {
+                Update.printError(Serial);
+            }
+        }
+        
+        // Если это последний кусок файла, финализируем прошивку
+        if (final) {
+            if (Update.end(true)) {
+                Serial.printf("[OTA] Успешно записано байт: %u\n", index + len);
+            } else {
+                Update.printError(Serial);
+            }
+        }
     });
 
 }

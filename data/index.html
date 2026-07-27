@@ -24,11 +24,6 @@
     </nav> -->
 
     <main>
-        <!--
-        хорошо смотрится на пк, сделать сворачивание обоих контейнеров по
-        одной кнопке, на моб устройствах слать списком без flex,
-        разобраться с таблицей расписания на моб устройствах, не влезает.
-        -->
         <div class="tab-content active">
             <div class="container-header">
                 <h2>Управление системой</h2>
@@ -72,6 +67,29 @@
                             <input type="number" id="manual-volume-input" min="0" max="9999" placeholder="Например: 250">
                         </div>
                         <button id="manual-toggle-btn" class="btn btn-primary">Запустить полив</button>
+                    </div>
+                </section>
+                <section id="system-update">
+                    <h2>Обновление прошивки</h2>
+                    <div class="card" style="display: flex; flex-direction: column; flex-grow: 1;">
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
+                            Выберите скомпилированный бинарный файл прошивки (.bin) для беспроводного обновления HydroNode.
+                        </p>
+                        
+                        <!-- Форма отправки файла на ESP8266 -->
+                        <form id="ota-form" method="POST" action="/api/update" enctype="multipart/form-data" style="display: flex; flex-direction: column; flex-grow: 1;">
+                            <div class="form-group" style="margin-bottom: auto;">
+                                <input type="file" id="ota-file-input" name="update" accept=".bin" style="padding: 5px 0;">
+                            </div>
+                            
+                            <!-- Прогресс-бар загрузки прошивки -->
+                            <div id="ota-progress-container" style="display: none; width: 100%; background: var(--bg-color); border-radius: 8px; margin-bottom: 15px; overflow: hidden;">
+                                <div id="ota-progress-bar" style="width: 0%; height: 8px; background: var(--primary-color); transition: width 0.1s linear;"></div>
+                            </div>
+
+                            <button type="submit" id="ota-submit-btn" class="btn btn-primary" disabled>Загрузить прошивку</button>
+                            <p id="ota-status-text" style="margin-top: 10px; font-size: 0.9rem; min-height: 1.2em; text-align: center;"></p>
+                        </form>
                     </div>
                 </section>
             </div>

@@ -115,20 +115,33 @@ h2 { font-size: 1.2rem; }
     align-items: stretch;
 }
 
-#network, #pump-control {
-    width: 50%;
+#network, #pump-control, #system-update {
+    width: 100%;
     display: flex;
     flex-direction: column;
+    padding-top: 5px;
 }
-#wifi-form, #pump-control .card {
+
+#network .container-header,
+#pump-control h2,
+#system-update h2 {
+    min-height: 40px;
+    margin-bottom: 15px;
+}
+
+#wifi-form, #pump-control .card, #system-update .card, #ota-form {
     display: flex;
     flex-direction: column;
-    flex-grow: 1; /* Заполняют всю высоту родителя */
+    flex-grow: 1;
+    height: 100%;
 }
+
 #wifi-form .form-group:nth-last-of-type(1),
-#pump-control .form-group {
-    margin-bottom: auto !important; /* Авто-отступ снизу прижимает кнопки к полу */
+#pump-control .form-group,
+#ota-form .form-group {
+    margin-bottom: auto !important;
 }
+
 @media (max-width: 768px) {
     .tab-twice {
         flex-direction: column;
