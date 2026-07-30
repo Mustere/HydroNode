@@ -7,7 +7,6 @@
 #include "TimeManager.h"
 #include "PumpManager.h"
 
-// см. webinterface.cpp, нужна ли перезагрузка?
 void setup() {
     Serial.begin(115200);
     delay(500);

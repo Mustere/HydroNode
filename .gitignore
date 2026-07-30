@@ -19,13 +19,11 @@
 .idea/
 
 # --- Файлы конфигурации и секретов (ОЧЕНЬ ВАЖНО) ---
-include/secret.h
-include/secrets.h
-src/secret.h
-src/secrets.h
+data/config.json
 
 # --- Логи и временные файлы системы ---
 node_modules/
 .DS_Store
 Thumbs.db
 *.log
+docs/
