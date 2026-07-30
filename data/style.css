@@ -83,7 +83,7 @@ nav {
 }
 
 .tab-content {
-    display: none; /* Скрываем все вкладки по умолчанию */
+    display: none;
     background: var(--panel-bg);
     border-radius: 15px;
     padding: 15px;
@@ -92,13 +92,9 @@ nav {
 }
 
 .tab-content.active {
-    display: block; /* Показываем только активную */
+    display: block;
 }
-.tab-twice{
-    gap: 35px;
-    display: flex;
-    justify-content:space-between;
-}
+
 h2 { font-size: 1.2rem; }
 .container-header{
     display: flex;
@@ -136,11 +132,6 @@ h2 { font-size: 1.2rem; }
     height: 100%;
 }
 
-#wifi-form .form-group:nth-last-of-type(1),
-#pump-control .form-group {
-    margin-bottom: auto !important;
-}
-
 #ota-progress-container{
     display: none;
     width: 100%;
@@ -161,10 +152,6 @@ h2 { font-size: 1.2rem; }
         flex-direction: column;
     }
 
-    #network, 
-    #pump-control {
-        width: 100%;
-    }
     #schedule-form {
         max-width: 100%;
         overflow-x: auto;
@@ -180,8 +167,8 @@ h2 { font-size: 1.2rem; }
 
     #schedule-table th, 
     #schedule-table td {
-        padding: 8px 6px; /* Уменьшаем отступы в ячейках */
-        font-size: 0.85rem; /* Чуть уменьшаем шрифт */
+        padding: 8px 6px;
+        font-size: 0.85rem;
     }
 
     #schedule-table input[type="time"] {
@@ -211,36 +198,15 @@ h2 { font-size: 1.2rem; }
     }
 
 }
-/* .card {
-    background-color: var(--panel-bg);
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: var(--shadow);
-    margin-bottom: 20px;
-} */
 
 /* --- ТАБЛИЦА РАСПИСАНИЯ --- */
 table {
-    width: 100%;/* Настраиваем сетку/строку для двух панелей */
-.tab-twice {
-    display: flex;
-    gap: 15px;
-    align-items: stretch; /* Важно: заставляет обе секции быть строго одинаковой высоты */
+    width: 100%;
 }
 
-/* Форму Wi-Fi и карточку насоса растягиваем на 100% высоты секций */
-#wifi-form, #pump-control .card {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1; /* Заполняют всю высоту родителя */
-}
-
-/* Последнюю перед кнопкой группу инпутов заставляем выталкивать кнопку вниз */
 #wifi-form .form-group:nth-last-of-type(1),
 #pump-control .form-group {
-    margin-bottom: auto !important; /* Авто-отступ снизу прижимает кнопки к полу */
-}
-
+    margin-bottom: auto !important;
     border-collapse: collapse;
     background-color: var(--panel-bg);
     border-radius: 15px;
@@ -313,16 +279,12 @@ input[type="number"] {
 .btn-delete {
     width: 40px;
     height: 40px;
-
     border: none;
     border-radius: 10px;
-
     background-color: var(--danger-color);
     color: white;
-
     font-size: 1.1rem;
     font-weight: bold;
-
     cursor: pointer;
 }
 
@@ -347,54 +309,41 @@ input[type="checkbox"] {
     min-width: 100px;
 }
 
-/* Контейнер-обертка для позиционирования новой стрелки */
 .select-wrapper {
     position: relative;
     width: 70%;
 }
 
-/* Сам выпадающий список */
 .select-wrapper select {
     width: 100%;
-    padding: 10px 45px 10px 12px !important; /* Отступ справа, чтобы текст не заезжал на стрелку */
+    padding: 10px 45px 10px 12px !important;
     border: 1px solid var(--border-color);
     background-color: var(--panel-bg);
     color: var(--text-color);
     border-radius: 15px;
     font-size: 1rem;
     cursor: pointer;
-
-    /* Отключаем стандартную стрелку */
     appearance: none !important;
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
 }
 
-/* Скрываем стрелку в IE/Edge */
 .select-wrapper select::-ms-expand {
     display: none;
 }
 
-/* РИСУЕМ НОВУЮ СТРЕЛКУ ЧЕРЕЗ CSS ТРЕУГОЛЬНИК */
 .select-wrapper::after {
     content: "";
     position: absolute;
     top: 50%;
-    
-    /* --- ВОТ ЗДЕСЬ МЫ ДВИГАЕМ СТРЕЛКУ ВЛЕВО --- */
-    right: 28px; /* Увеличьте это число, чтобы сдвинуть стрелку еще дальше влево */
-    
+    right: 15px;
     transform: translateY(-50%);
-    
-    /* Строим треугольник, направленный вниз */
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
-    border-top: 6px solid var(--text-muted); /* Цвет стрелки подстраивается под тему */
-    
-    pointer-events: none; /* Клик сквозь стрелку будет открывать список */
+    border-top: 6px solid var(--text-muted);
+    pointer-events: none;
 }
 
-/* Эффект фокуса */
 .select-wrapper select:focus {
     outline: 1.5px solid black;
 }
@@ -410,7 +359,6 @@ input[type="checkbox"].rule-active {
     max-height: 24px !important;
     min-width: 46px !important;
     min-height: 24px !important;
-    
     -webkit-appearance: none;
     appearance: none;
     background-color: #ccc;
