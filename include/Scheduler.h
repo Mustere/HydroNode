@@ -5,7 +5,7 @@
 #include <LittleFS.h>
 
 // Максимальное количество таймеров полива
-const int MAX_SCHEDULE_SLOTS = 28;
+const int MAX_SCHEDULE_SLOTS = 35;
 
 // Структура для одной ячейки расписания
 struct ScheduleSlot {

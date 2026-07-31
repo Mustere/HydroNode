@@ -7,7 +7,7 @@ The device controls a water pump on a schedule or manually via a web dashboard a
 ## Features
 
 - **Pump control** — manual start for a specific volume (mL) or an indefinite on/off mode
-- **Watering schedule** — up to 15 independent slots with configurable time and volume, with protection against double-triggering on the same day
+- **Watering schedule** — up to 35 independent slots with configurable time and volume, with protection against double-triggering on the same day
 - **Web interface** — an HTML/CSS/JS dashboard served directly from the controller via LittleFS
 - **Flexible Wi-Fi** — client mode (STA) connecting to a home network, or a standalone access point (AP); if the STA connection fails, the device automatically falls back to a recovery access point, `HydroNode_RECOVERY`
 - **Time sync** — accurate time via NTP (`pool.ntp.org`), with the timezone set in POSIX format
