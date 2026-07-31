@@ -28,21 +28,21 @@ The device controls a water pump on a schedule or manually via a web dashboard a
 
 ```
 HydroNode/
-├── src/                 # firmware source code
+├── src/                     # firmware source code
 │   ├── main.cpp             # entry point: initialization, setup/loop
 │   ├── ConfigManager.cpp    # Wi-Fi settings read/write (LittleFS + JSON)
 │   ├── PumpManager.cpp      # pump control, run-time calculation by volume
 │   ├── Scheduler.cpp        # watering schedule, duplicate-trigger protection
 │   ├── TimeManager.cpp      # NTP time sync
 │   └── WebInterface.cpp     # HTTP server, REST API, OTA updates
-├── include/             # module header files
-├── data/                # web interface files (uploaded to LittleFS)
+├── include/                 # module header files
+├── data/                    # web interface files (uploaded to LittleFS)
 │   ├── index.html
 │   ├── style.css
 │   ├── script.js
 │   └── config.json          # Wi-Fi settings and schedule (created automatically)
-├── docs/                # ESP8266/ESP32 datasheets and related documentation
-└── platformio.ini       # PlatformIO project configuration
+├── docs/                    # ESP8266/ESP32 datasheets and related documentation
+└── platformio.ini           # PlatformIO project configuration
 ```
 
 ## Build and flash
