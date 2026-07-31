@@ -86,7 +86,8 @@ nav {
     display: none;
     background: var(--panel-bg);
     border-radius: 15px;
-    padding: 15px;
+    padding-top: 15px;
+    
     margin-bottom: 10px;
     box-shadow: var(--shadow);
 }
@@ -101,28 +102,44 @@ h2 { font-size: 1.2rem; }
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
+    padding: 0 15px 0 15px;
 }
 .tab-content.active.collapsed .container-header {
-    margin-bottom: 0px;
-}
-.tab-twice {
-    display: flex;
-    gap: 15px;
-    align-items: stretch;
+    margin-bottom: 15px;
 }
 
+.tab-twice {
+  display: flex;
+  gap: 15px;
+  overflow: hidden;
+  transition: max-height 0.4s ease-in-out, 
+              padding 0.4s ease-in-out, 
+              margin 0.4s ease-in-out;
+}
+
+.tab-twice > section {
+  flex: 1;
+  min-height: 0; 
+}
+
+#network{ margin-left: 15px; }
+#system-update{ margin-right: 15px; }
 #network, #pump-control, #system-update {
     width: 100%;
     display: flex;
     flex-direction: column;
     padding-top: 5px;
+    margin-bottom: 15px;
 }
 
-#network .container-header,
+#network h2{
+    min-height: 40px;
+    margin-bottom: 15px;
+}
 #pump-control h2,
 #system-update h2 {
     min-height: 40px;
-    margin-bottom: 15px;
+    margin-bottom: 24px;
 }
 
 #wifi-form, #pump-control .card, #system-update .card, #ota-form {
@@ -148,6 +165,9 @@ h2 { font-size: 1.2rem; }
 }
 
 @media (max-width: 768px) {
+    .btn-primary{
+        margin-top: 15px;
+    }
     .tab-twice {
         flex-direction: column;
     }
@@ -196,6 +216,15 @@ h2 { font-size: 1.2rem; }
     #schedule-form::-webkit-scrollbar {
         display: none;
     }
+    .tab-twice {
+        flex-direction: column;
+        gap: 25px;
+    }
+
+    .tab-twice > section {
+        width: 100%;
+        flex: none;
+    }
 
 }
 
@@ -223,8 +252,12 @@ th, td {
 th {
     background-color: var(--bg-color);
     font-weight: 600;
+    border-radius: 15px;
 }
 
+#schedule-form{
+    margin: 0 15px 0 15px;
+}
 @media (prefers-color-scheme: dark) {
     th { background-color: rgba(255, 255, 255, 0.05); }
 }
@@ -268,11 +301,11 @@ input[type="number"] {
     cursor: pointer;
     transition: background-color 0.5s;
     text-align: center;
+    box-shadow: var(--shadow);
 }
 .btn-add { background-color: var(--additional-color); color: #ffffff; width: 30%; }
 .btn-add:hover { background-color: var(--additional-color-hover); }
-
-.btn-success { background-color: var(--primary-color); color: #ffffff; }
+.btn-success { background-color: var(--primary-color); color: #ffffff; margin-top: 15px; }
 .btn-success:hover { background-color: var(--primary-hover); }
 .btn-collapse{ width: 4em; height: 4em; background: none; border: none; cursor: pointer; color: var(--text-color); }
 

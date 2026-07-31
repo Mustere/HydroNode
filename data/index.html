@@ -31,9 +31,7 @@
             </div>
             <div class="tab-twice">
                 <section id="network">
-                    <div class="container-header">
-                        <h2>Настройки Wi-Fi соединения</h2>
-                    </div>
+                    <h2>Настройки Wi-Fi соединения</h2>
                     <form id="wifi-form">
                         <div class="form-group">
                             <label for="wifi-mode">Режим работы:</label>
@@ -55,14 +53,14 @@
                             <input type="password" id="wifi-pass" name="password" placeholder="Введите пароль">
                         </div>
 
-                        <button type="submit" class="btn btn-success" style="margin-top: 15px;">Применить и перезагрузить</button>
+                        <button type="submit" class="btn btn-success">Применить и перезагрузить</button>
                     </form>
                 </section>
                 <section id="pump-control">
                     <h2>Управление насосом</h2>
                     <div class="card">
                         <p>Состояние насоса: <span id="watering-status" class="state-off">Выключен</span></p>
-                        <div class="form-group" style="margin-top: 15px; margin-bottom: 15px;">
+                        <div class="form-group" style="margin-top: 24px; margin-bottom: 15px;">
                             <label for="manual-volume-input" style="width: 50%;">Объем полива (мл):</label>
                             <input type="number" id="manual-volume-input" min="0" max="9999" placeholder="Например: 250">
                         </div>
@@ -110,10 +108,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Строки таблицы будут динамически создаваться через script.js -->
+                        <!-- Строки таблицы динамически создаются через script.js -->
                     </tbody>
                 </table>
-                <button type="submit" class="btn btn-success">Сохранить расписание</button>
+                <button type="submit" class="btn btn-success" style="margin-bottom: 15px;">Сохранить расписание</button>
             </form>
         </section>
     </main>

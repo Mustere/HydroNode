@@ -15,33 +15,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCollapse = section?.querySelector('.btn-collapse');
 
     function toggleCollapse(isCollapsed) {
-        if (!section || !form || !btnCollapse) return;
+    if (!section || !form || !btnCollapse) return;
 
-        if (isCollapsed) {
-            form.style.display = 'none';
-            section.classList.add('collapsed');
-            btnCollapse.textContent = '↓';
-        } else {
-            form.style.display = 'flex'; // Используем flex, чтобы панели встали в ряд (50% + 50%)
-            section.classList.remove('collapsed');
-            btnCollapse.textContent = '↑';
-        }
+    if (isCollapsed) {
+        form.style.maxHeight = '0px';
+        section.classList.add('collapsed');
+        btnCollapse.textContent = '↓';
+    } else {
+        section.classList.remove('collapsed');
+        btnCollapse.textContent = '↑';
+
+        form.style.maxHeight = 'none'; 
+
+        const fullHeight = form.scrollHeight; 
+        form.style.maxHeight = '0px'; 
+        form.offsetHeight;
+        form.style.maxHeight = fullHeight + 'px';
+    }
     }
 
-    // Изменили ключ на sys_control_collapsed, так как сворачивается вся панель, а не только Wi-Fi
     const savedStatus = localStorage.getItem('sys_control_collapsed');
     const isCollapsed = savedStatus !== null ? savedStatus === 'true' : true;
-    toggleCollapse(isCollapsed);
+
+    setTimeout(() => toggleCollapse(isCollapsed), 50);
 
     if (btnCollapse) {
-        btnCollapse.addEventListener('click', () => {
-            const currentlyCollapsed = form?.style.display === 'none';
-            const nextState = !currentlyCollapsed;
-            toggleCollapse(nextState);
-            localStorage.setItem('sys_control_collapsed', String(nextState));
-        });
+    btnCollapse.addEventListener('click', () => {
+        const currentlyCollapsed = section.classList.contains('collapsed');
+        const nextState = !currentlyCollapsed;
+        toggleCollapse(nextState);
+        localStorage.setItem('sys_control_collapsed', String(nextState));
+    });
     }
-
 
     /*
     ============================================================
