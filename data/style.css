@@ -165,6 +165,9 @@ h2 { font-size: 1.2rem; }
 }
 
 @media (max-width: 768px) {
+    body{
+        width: 90%;
+    }
     .btn-primary{
         margin-top: 15px;
     }
@@ -219,12 +222,15 @@ h2 { font-size: 1.2rem; }
     .tab-twice {
         flex-direction: column;
         gap: 25px;
+        padding: 0 15px 0 15px;
     }
 
     .tab-twice > section {
         width: 100%;
         flex: none;
     }
+
+    #network{ margin: 0; }
 
 }
 
