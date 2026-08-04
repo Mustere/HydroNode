@@ -1,4 +1,3 @@
-# --- PlatformIO служебные файлы ---
 .pio/
 .pioenvs/
 .piolibdeps/
@@ -7,21 +6,12 @@
 *.idb
 *.pdb
 
-# --- Файлы сред разработки (VS Code / CLion) ---
-.vscode/.browse.VC.db
-.vscode/.cmake.api/
-.vscode/.pins.json
+/vscode/
 
-# Не игнорируем сам extensions.json, но скрываем внутренний кэш
-.vscode/extensions.json
-.vscode/launch.json
-.vscode/tasks.json
 .idea/
 
-# --- Файлы конфигурации и секретов (ОЧЕНЬ ВАЖНО) ---
 data/config.json
 
-# --- Логи и временные файлы системы ---
 node_modules/
 .DS_Store
 Thumbs.db
