@@ -6,9 +6,7 @@
 *.idb
 *.pdb
 
-/vscode/
-.vscode/launch.json
-.vscode/extensions.json
+.vscode/
 .idea/
 
 data/config.json
