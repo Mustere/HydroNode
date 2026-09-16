@@ -3,7 +3,6 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
-#include "LightManager.h"
 
 // Структура для удобного хранения настроек Wi-Fi в оперативной памяти
 struct WifiConfig {
@@ -19,4 +18,3 @@ extern WifiConfig currentConfig;
 bool initConfig();
 bool loadConfig();
 bool saveWiFiConfig(const String& mode, const String& ssid, const String& password);
-bool saveConfig();

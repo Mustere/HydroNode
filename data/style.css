@@ -12,32 +12,6 @@
     --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-.secret-input {
-    display: flex;
-    width: 70%;
-    gap: 8px;
-}
-
-.secret-input input {
-    flex: 1;
-    min-width: 0;
-}
-
-.toggle-secret {
-    flex: 0 0 auto;
-    padding: 0 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 15px;
-    background: var(--bg-color);
-    color: var(--text-color);
-    cursor: pointer;
-    width: 35%;
-}
-
-.toggle-secret:hover {
-    background: var(--border-color);
-}
-
 @media (prefers-color-scheme: dark) {
     :root {
         --bg-color: #121212;
@@ -51,11 +25,6 @@
         --danger-color: #cf6679;
         --border-color: #333333;
         --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    }
-
-    .secret-input input[type="password"],
-    .secret-input input[type="text"] {
-        width: 100%;
     }
 }
 
@@ -263,10 +232,6 @@ h2 { font-size: 1.2rem; }
 
     #network{ margin: 0; }
 
-    .secret-input {
-        width: 100%;
-    }
-
 }
 
 /* --- ТАБЛИЦА РАСПИСАНИЯ --- */
@@ -298,122 +263,6 @@ th {
 
 #schedule-form{
     margin: 0 15px 0 15px;
-}
-
-#message {
-    min-height: 1.5em;
-    margin: 12px auto;
-    color: var(--text-muted);
-    text-align: center;
-}
-
-.light-panel {
-    padding-bottom: 20px;
-}
-
-.section-hint {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-}
-
-.save-status {
-    color: var(--primary-color);
-    font-size: 0.85rem;
-}
-
-.light-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 0 15px;
-}
-
-.light-controls,
-.alarm-settings {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.control-row,
-.switch-row {
-    display: grid;
-    grid-template-columns: minmax(130px, 0.8fr) minmax(0, 1.5fr) auto;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    margin: 0;
-}
-
-.switch-row {
-    grid-template-columns: 1fr auto;
-}
-
-.control-row input[type="color"],
-.control-row select {
-    width: 100%;
-}
-
-.control-row input[type="range"] {
-    width: 100%;
-    accent-color: var(--primary-color);
-}
-
-.control-row output {
-    min-width: 3ch;
-    text-align: right;
-    color: var(--text-muted);
-}
-
-.alarm-settings {
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 14px;
-}
-
-.alarm-settings legend {
-    padding: 0 6px;
-    color: var(--text-color);
-    font-weight: 600;
-}
-
-.alarm-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
-}
-
-.alarm-grid label {
-    width: 100%;
-    text-align: center;
-}
-
-.alarm-grid input {
-    width: 100%;
-    margin-top: 4px;
-    padding: 7px;
-}
-
-.light-form .btn-add {
-    align-self: flex-start;
-}
-
-@media (max-width: 768px) {
-    .control-row,
-    .switch-row {
-        grid-template-columns: 1fr auto;
-    }
-
-    .control-row input[type="range"],
-    .control-row input[type="color"],
-    .control-row select {
-        grid-column: 1 / -1;
-        grid-row: 2;
-    }
-
-    .alarm-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
 }
 @media (prefers-color-scheme: dark) {
     th { background-color: rgba(255, 255, 255, 0.05); }
