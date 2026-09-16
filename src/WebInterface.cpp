@@ -1,239 +1,174 @@
 #include "WebInterface.h"
-#include "ConfigManager.h"
-#include "Scheduler.h"
-#include "TimeManager.h"
-#include "PumpManager.h"
-#include <ESP8266WiFi.h>
+
 #include <ESP8266WiFi.h>
 #include <Updater.h>
 
-// Определение глобальных объектов
+#include "ConfigManager.h"
+#include "LightManager.h"
+#include "TimeManager.h"
+
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 AsyncEventSource events("/events");
 
-// Внутренние переменные модуля (скрыты от main.cpp)
-static bool shouldReboot = false;
-static unsigned long rebootTimer = 0;
+namespace {
+bool shouldReboot = false;
+uint32_t rebootTimer = 0;
 
-// Вспомогательная функция для запуска отложенной перезагрузки
+void sendJson(AsyncWebServerRequest* request, JsonDocument& doc) {
+    String response;
+    serializeJson(doc, response);
+    request->send(200, "application/json", response);
+}
+
+void sendLightStatus(AsyncWebSocketClient* client) {
+    JsonDocument doc;
+    doc["type"] = "status";
+    doc["enabled"] = lightConfig.enabled;
+    doc["brightness"] = lightConfig.brightness;
+    doc["color"] = lightConfig.color;
+    doc["effect"] = static_cast<uint8_t>(lightConfig.effect);
+    String response;
+    serializeJson(doc, response);
+    client->text(response);
+}
+
+bool applyLightJson(JsonVariant source) {
+    if (!source.is<JsonObject>()) return false;
+    if (source["enabled"].is<bool>()) {
+        setLightEnabled(source["enabled"].as<bool>());
+    }
+    lightConfig.brightness = constrain(source["brightness"] | lightConfig.brightness, 0, 255);
+    lightConfig.color = source["color"] | lightConfig.color;
+    const uint8_t effect = source["effect"] | static_cast<uint8_t>(lightConfig.effect);
+    if (effect > static_cast<uint8_t>(LightEffect::Cycle)) return false;
+    lightConfig.effect = static_cast<LightEffect>(effect);
+    lightConfig.alarmEnabled = source["alarm_enabled"] | lightConfig.alarmEnabled;
+    lightConfig.mqttToken = source["mqtt_token"] | lightConfig.mqttToken;
+    JsonArray alarms = source["alarm_minutes"].as<JsonArray>();
+    for (uint8_t i = 0; i < 7 && i < alarms.size(); ++i) {
+        const int minutes = alarms[i] | lightConfig.alarmMinutes[i];
+        if (minutes < 0 || minutes > 1439) return false;
+        lightConfig.alarmMinutes[i] = minutes;
+    }
+    return saveConfig();
+}
+} // namespace
+
 void requestReboot() {
     shouldReboot = true;
     rebootTimer = millis();
 }
 
-// Обработчик неизвестных запросов
-static void onRequest(AsyncWebServerRequest *request) {
-    request->send(404, "text/plain", "404: Not Found");
-}
-
-// Инициализация сервера и регистрация маршрутов (маршрутизатор)
 void initWebServer() {
-    // 1. Привязка базовых системных хэндлеров
     server.addHandler(&ws);
     server.addHandler(&events);
+    ws.onEvent([](AsyncWebSocket*, AsyncWebSocketClient* client, AwsEventType type,
+                 void*, uint8_t*, size_t) {
+        if (type == WS_EVT_CONNECT) sendLightStatus(client);
+    });
 
-    // 2. Отдача статических файлов интерфейса из LittleFS
     server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
 
-    // 3. API, прием и обработка настроек Wi-Fi из HTML-формы
-    server.on("/api/save-wifi", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
-    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-        
+    server.on("/api/get-config", HTTP_GET, [](AsyncWebServerRequest* request) {
         JsonDocument doc;
-        DeserializationError error = deserializeJson(doc, (const char*)data, len);
+        doc["wifi_mode"] = currentConfig.mode;
+        doc["ssid"] = currentConfig.ssid;
+        doc["password"] = currentConfig.password;
+        JsonObject light = doc["light"].to<JsonObject>();
+        serializeLightConfig(light);
+        sendJson(request, doc);
+    });
 
-        if (error) {
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Неверный JSON\"}");
+    server.on("/api/get-status", HTTP_GET, [](AsyncWebServerRequest* request) {
+        JsonDocument doc;
+        doc["enabled"] = lightConfig.enabled;
+        doc["brightness"] = lightConfig.brightness;
+        doc["color"] = lightConfig.color;
+        doc["effect"] = static_cast<uint8_t>(lightConfig.effect);
+        sendJson(request, doc);
+    });
+
+    server.on("/api/set-light-enabled", HTTP_POST, [](AsyncWebServerRequest* request) {}, nullptr,
+    [](AsyncWebServerRequest* request, uint8_t* data, size_t length, size_t, size_t) {
+        JsonDocument doc;
+        if (deserializeJson(doc, data, length) || !doc["enabled"].is<bool>()) {
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Неверное состояние подсветки\"}");
             return;
         }
 
-        // Вытаскиваем значения полей из формы
-        String mode = doc["wifi_mode"] | "STA";
-        String ssid = doc["ssid"] | "";
-        String password = doc["password"] | "";
-
-        Serial.println("\n[Web] Получены настройки Wi-Fi:");
-        Serial.printf("Режим: %s | SSID: %s\n", mode.c_str(), ssid.c_str());
-
-        // ВЫЗЫВАЕМ СОХРАНЕНИЕ ВО ФЛЕШ:
-        if (saveWiFiConfig(mode, ssid, password)) {
-            request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Параметры сохранены во Flash. Перезагрузка...\"}");
-            requestReboot();
-        } else {
-            request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Ошибка записи во Flash память ESP\"}");
-        }
-    });
-
-    // 4. Отладочный эндпоинт состояния кучи (heap)
-    server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(200, "text/plain", String(ESP.getFreeHeap()));
-    });
-
-    // 5. Обработчик "Не найдено"
-    server.onNotFound(onRequest);
-
-    // Запуск сервера
-    server.begin();
-    Serial.println("[Web] HTTP-сервер успешно запущен");
-
-    // API: Отдача расписания для динамической генерации строк таблицы в JS
-    server.on("/api/get-schedule", HTTP_GET, [](AsyncWebServerRequest *request) {
-    JsonDocument doc;
-    JsonArray arr = doc["schedule"].to<JsonArray>(); 
-
-        for (int i = 0; i < MAX_SCHEDULE_SLOTS; i++) {
-            JsonObject slot = arr.add<JsonObject>();
-            slot["id"] = schedule[i].id;
-            slot["time"] = schedule[i].time;
-            slot["volume"] = schedule[i].volume;
-            slot["active"] = schedule[i].active;
-        }
-
-        String response;
-        serializeJson(doc, response);
-        request->send(200, "application/json", response);
-    });
-
-    // API: Прием нового расписания из формы
-    server.on("/api/save-schedule", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
-    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-        
-        JsonDocument doc;
-        DeserializationError error = deserializeJson(doc, (const char*)data, len);
-
-        if (error || !doc["schedule"].is<JsonArray>()) {
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Неверный формат расписания\"}");
+        setLightEnabled(doc["enabled"].as<bool>());
+        if (!saveConfig()) {
+            request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Ошибка сохранения\"}");
             return;
         }
+        request->send(200, "application/json", "{\"status\":\"ok\"}");
+    });
 
-        JsonArray arr = doc["schedule"].as<JsonArray>();
-        
-        // Передаем массив в модуль Scheduler для записи
-        if (saveScheduleConfig(arr)) {
-            request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Расписание успешно обновлено!\"}");
-        } else {
-            request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Ошибка сохранения расписания во Flash\"}");
+    server.on("/api/save-light", HTTP_POST, [](AsyncWebServerRequest* request) {}, nullptr,
+    [](AsyncWebServerRequest* request, uint8_t* data, size_t length, size_t, size_t) {
+        JsonDocument doc;
+        if (deserializeJson(doc, data, length) || !applyLightJson(doc)) {
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Неверные настройки света\"}");
+            return;
         }
+        request->send(200, "application/json", "{\"status\":\"ok\"}");
     });
 
-    // API: Получение текущего состояния насоса (для первой загрузки страницы)
-    server.on("/api/get-status", HTTP_GET, [](AsyncWebServerRequest *request) {
-        JsonDocument doc;
-        doc["pump_active"] = isPumpOn();
-        
-        String response;
-        serializeJson(doc, response);
-        request->send(200, "application/json", response);
+    server.on("/api/test-sunrise", HTTP_POST, [](AsyncWebServerRequest* request) {
+        testSunrise(lightConfig.brightness);
+        request->send(200, "application/json", "{\"status\":\"ok\"}");
     });
 
-    // API: Управление насосом с веб-панели
-    server.on("/api/toggle-pump", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
-    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-        
+    server.on("/api/save-wifi", HTTP_POST, [](AsyncWebServerRequest* request) {}, nullptr,
+    [](AsyncWebServerRequest* request, uint8_t* data, size_t length, size_t, size_t) {
         JsonDocument doc;
-        DeserializationError error = deserializeJson(doc, (const char*)data, len);
-
-        if (error) {
+        if (deserializeJson(doc, data, length)) {
             request->send(400, "application/json", "{\"status\":\"error\"}");
             return;
         }
-
-        // Если насос сейчас работает — любая команда с сайта его выключает
-        if (isPumpOn()) {
-            togglePumpManual(false);
-            request->send(200, "application/json", "{\"status\":\"ok\",\"pump_active\":false}");
+        const String mode = doc["wifi_mode"] | "AP";
+        const String ssid = doc["ssid"] | "";
+        const String password = doc["password"] | "";
+        lightConfig.mqttToken = doc["mqtt_token"] | lightConfig.mqttToken;
+        if ((mode != "AP" && mode != "STA") || ssid.isEmpty() ||
+            !saveWiFiConfig(mode, ssid, password)) {
+            request->send(400, "application/json", "{\"status\":\"error\"}");
             return;
         }
-
-        // Если насос выключен, проверяем, передал ли пользователь объем
-        int volume = doc["volume"] | 0;
-
-        if (volume > 0) {
-            // Запуск полива по точному объему (выключится сам)
-            executeWatering(volume);
-        } else {
-            // Запуск в режиме постоянного потока до повторного клика
-            togglePumpManual(true);
-        }
-
-        request->send(200, "application/json", "{\"status\":\"ok\",\"pump_active\":true}");
+        request->send(200, "application/json", "{\"status\":\"ok\"}");
+        requestReboot();
     });
 
-    // API: Беспроводное обновление прошивки (Web OTA)
-    server.on("/api/update", HTTP_POST, [](AsyncWebServerRequest *request) {
-        // Этот коллбек вызывается ПОСЛЕ завершения загрузки всего файла
-        bool updateError = Update.hasError();
-        
-        // Формируем HTTP-ответ
-        AsyncWebServerResponse *response = request->beginResponse(
-            updateError ? 500 : 200, 
-            "application/json", 
-            updateError ? "{\"status\":\"error\",\"message\":\"Ошибка записи во Flash!\"}" 
-                        : "{\"status\":\"ok\",\"message\":\"Прошивка загружена. Перезагрузка...\"}"
-        );
-        response->addHeader("Connection", "close");
-        request->send(response);
-        
-        // Если ошибок нет, запускаем отложенный ребут микроконтроллера
-        if (!updateError) {
-            Serial.println("[OTA] Обновление успешно завершено. Запрос ребута...");
-            requestReboot();
-        }
-    }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-        // Этот коллбек обрабатывает файл КУСКАМИ (потоком) в процессе загрузки
+    server.on("/api/update", HTTP_POST, [](AsyncWebServerRequest* request) {
+        const bool failed = Update.hasError();
+        request->send(failed ? 500 : 200, "application/json",
+                      failed ? "{\"status\":\"error\"}" : "{\"status\":\"ok\"}");
+        if (!failed) requestReboot();
+    }, [](AsyncWebServerRequest*, String, size_t index, uint8_t* data, size_t length, bool final) {
         if (!index) {
-            Serial.printf("[OTA] Старт обновления. Файл: %s\n", filename.c_str());
-            
-            // Переводим Updater в асинхронный режим работы
             Update.runAsync(true);
-            
-            // Рассчитываем максимальный доступный размер под прошивку во Flash
-            uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-            
-            if (!Update.begin(maxSketchSpace, U_FLASH)) { // U_FLASH указывает, что шьем код прошивки
-                Update.printError(Serial);
-            }
+            const uint32_t maxSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+            if (!Update.begin(maxSpace, U_FLASH)) Update.printError(Serial);
         }
-        
-        // Пишем текущий кусок данных во флеш-память, если нет ошибок
-        if (!Update.hasError()) {
-            if (Update.write(data, len) != len) {
-                Update.printError(Serial);
-            }
-        }
-        
-        // Если это последний кусок файла, финализируем прошивку
-        if (final) {
-            if (Update.end(true)) {
-                Serial.printf("[OTA] Успешно записано байт: %u\n", index + len);
-            } else {
-                Update.printError(Serial);
-            }
-        }
+        if (!Update.hasError() && Update.write(data, length) != length) Update.printError(Serial);
+        if (final && !Update.end(true)) Update.printError(Serial);
     });
 
+    server.on("/heap", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->send(200, "text/plain", String(ESP.getFreeHeap()));
+    });
+    server.begin();
 }
 
-// Функция для вызова внутри главного loop()
 void handleWebServer() {
-    // Безопасный таймер перезагрузки (ждем 2 секунды, пока отправятся HTTP-пакеты)
-    if (shouldReboot && (millis() - rebootTimer >= 2000)) {
-        Serial.println("[System] Выполнение перезагрузки...");
-        ESP.restart();
-    }
-
-    // Отправка системного времени на веб-страницу раз в секунду через Server-Sent Events
-    static unsigned long lastEventTime = 0;
-    if (millis() - lastEventTime >= 60000) { 
-        lastEventTime = millis();
-        
-        String timeStr = getCurrentTimeStr(); // "HH:MM:SS" или "--:--:--"
-        String modeStr = (WiFi.getMode() == WIFI_STA) ? "STA" : "AP";
-        String pumpStr = isPumpOn() ? "ON" : "OFF";
-        String payload = timeStr + "|" + modeStr;
-
-        // Отправляем объединенное событие в браузер
+    if (shouldReboot && millis() - rebootTimer >= 2000) ESP.restart();
+    static uint32_t lastEvent = 0;
+    if (millis() - lastEvent >= 1000) {
+        lastEvent = millis();
+        const String payload = getCurrentTimeStr() + "|" +
+            (WiFi.getMode() == WIFI_STA ? "STA" : "AP") + "|" +
+            (lightConfig.enabled ? "ON" : "OFF");
         events.send(payload.c_str(), "status_tick");
     }
 }

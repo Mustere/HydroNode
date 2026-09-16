@@ -3,14 +3,14 @@
 #include <LittleFS.h>
 #include "ConfigManager.h"
 #include "WebInterface.h"
-#include "Scheduler.h"
 #include "TimeManager.h"
-#include "PumpManager.h"
+#include "LightManager.h"
+#include "MqttManager.h"
 
 void setup() {
     Serial.begin(115200);
     delay(500);
-    Serial.println("\n[System] Старт системы HydroNode...");
+    Serial.println("\n[System] Старт системы LightNode...");
 
     // 1. Инициализация файловой системы
     if (!LittleFS.begin()) {
@@ -20,9 +20,8 @@ void setup() {
 
     // 2. Инициализация и чтение конфигурации из памяти
     initConfig();
-
-    // Инициализируем пин помпы
-    initPump();
+    initLight();
+    initMqtt();
 
     // 3. Умная логика старта Wi-Fi на основе сохраненного режима
     if (currentConfig.mode == "STA") {
@@ -45,7 +44,7 @@ void setup() {
             // Аварийный режим, если домашний роутер выключен или неверный пароль
             Serial.println("\n[WiFi] Не удалось подключиться. Аварийный запуск Точки Доступа...");
             WiFi.mode(WIFI_AP);
-            WiFi.softAP("HydroNode_RECOVERY", "12345678");
+            WiFi.softAP("LightNode_RECOVERY", "12345678");
             Serial.print("[WiFi] Аварийный IP адрес: ");
             Serial.println(WiFi.softAPIP());
         }
@@ -57,14 +56,12 @@ void setup() {
         Serial.print("[WiFi] IP адрес панели: ");
         Serial.println(WiFi.softAPIP());
     }
-    // Инициализация расписания
-    initScheduler();
     // 4. Инициализация сервера
     initWebServer();
 }
 
 void loop() {
     handleWebServer();
-    checkScheduler();
-    handlePump();
+    updateLight();
+    updateMqtt();
 }
