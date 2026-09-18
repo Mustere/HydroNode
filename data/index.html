@@ -45,12 +45,12 @@
 
                         <div class="form-group">
                             <label for="wifi-ssid">Имя сети (SSID):</label>
-                            <input type="text" id="wifi-ssid" name="ssid" placeholder="Введите название Wi-Fi">
+                            <input type="text" id="wifi-ssid" name="ssid" autocomplete="username" placeholder="Введите название Wi-Fi">
                         </div>
 
                         <div class="form-group">
                             <label for="wifi-pass">Пароль:</label>
-                            <input type="password" id="wifi-pass" name="password" placeholder="Введите пароль">
+                            <input type="password" id="wifi-pass" name="password" autocomplete="current-password" placeholder="Введите пароль">
                         </div>
 
                         <button type="submit" class="btn btn-success">Применить и перезагрузить</button>
@@ -62,7 +62,7 @@
                         <p>Состояние насоса: <span id="watering-status" class="state-off">Выключен</span></p>
                         <div class="form-group" style="margin-top: 24px; margin-bottom: 15px;">
                             <label for="manual-volume-input" style="width: 50%;">Объем полива (мл):</label>
-                            <input type="number" id="manual-volume-input" min="0" max="9999" placeholder="Например: 250">
+                            <input type="number" id="manual-volume-input" min="0" max="9999" placeholder="Например: 100">
                         </div>
                         <button id="manual-toggle-btn" class="btn btn-primary">Запустить полив</button>
                     </div>

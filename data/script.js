@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     /*
     ============================================================
     БАЗОВЫЕ ЭЛЕМЕНТЫ UI
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const source = new EventSource('/events');
 
         source.addEventListener('status_tick', (event) => {
-            const [espTime, espMode] = String(event.data || '').split('|');
+            const [espTime, espMode, espPump] = String(event.data || '').split('|');
 
             if (netStatusEl && espMode) {
                 netStatusEl.textContent = espMode;
@@ -104,6 +104,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 startLocalClock(espTime);
             } else if (ntpTimeEl) {
                 ntpTimeEl.textContent = 'Синхронизация...';
+            }
+
+            if (typeof espPump !== 'undefined') {
+                setPumpStatus(espPump === 'ON', espPump === 'ON' ? 'Включен' : 'Выключен');
             }
         }, false);
 
@@ -126,9 +130,36 @@ document.addEventListener('DOMContentLoaded', () => {
     ============================================================
     */
 
+    let socket = null;
+
+    function connectWebSocket() {
+        if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+            return socket;
+        }
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+        socket.addEventListener('open', () => {
+            console.log('WebSocket connected');
+            sendSocketMessage({ type: 'get_schedule' });
+        });
+
+        socket.addEventListener('close', () => {
+            console.warn('WebSocket connection closed');
+        });
+
+        socket.addEventListener('error', () => {
+            console.warn('WebSocket connection error');
+        });
+
+        return socket;
+    }
+
     function sendSocketMessage(message) {
-        if (typeof socket !== 'undefined' && socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(message));
+        const ws = connectWebSocket();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(message));
             return true;
         }
 
@@ -182,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (manualToggleBtn) {
-        manualToggleBtn.addEventListener('click', () => {
+        manualToggleBtn.addEventListener('click', async () => {
             const volume = getManualVolume();
 
             if (volume === null) {
@@ -195,21 +226,46 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!ok) return;
 
             const payload = {
-                type: 'manual_watering_start',
-                volume_ml: volume
+                volume: volume
             };
 
-            const sent = sendSocketMessage(payload);
-
             if (wateringStatusEl) {
-                wateringStatusEl.textContent = sent ? `Запущен на ${volume} мл` : 'Ошибка отправки';
-                wateringStatusEl.className = sent ? 'state-on' : 'state-off';
+                wateringStatusEl.textContent = 'Отправка...';
+                wateringStatusEl.className = 'state-off';
             }
 
-            if (sent) {
-                manualToggleBtn.disabled = true;
-                manualToggleBtn.textContent = 'Отправлено';
-                setTimeout(syncManualButtonState, 1200);
+            try {
+                const response = await fetch('/api/toggle-pump', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json().catch(() => ({}));
+                if (response.ok && result.status === 'ok') {
+                    const active = Boolean(result.pump_active);
+                    if (wateringStatusEl) {
+                        if (active) {
+                            wateringStatusEl.textContent = volume > 0 ? `Запущен на ${volume} мл` : 'Включен';
+                            wateringStatusEl.className = 'state-on';
+                        } else {
+                            wateringStatusEl.textContent = 'Выключен';
+                            wateringStatusEl.className = 'state-off';
+                        }
+                    }
+
+                    manualToggleBtn.disabled = true;
+                    manualToggleBtn.textContent = 'Отправлено';
+                    setTimeout(syncManualButtonState, 1200);
+                } else {
+                    throw new Error(result.message || 'Не удалось запустить полив');
+                }
+            } catch (error) {
+                console.error('Manual watering failed', error);
+                if (wateringStatusEl) {
+                    wateringStatusEl.textContent = 'Ошибка отправки';
+                    wateringStatusEl.className = 'state-off';
+                }
             }
         });
     }
@@ -346,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const deleteButtons = scheduleBody.querySelectorAll('.btn-delete');
         deleteButtons.forEach(button => {
-            button.disabled = schedule.length <= 1;
+            button.disabled = false;
         });
     }
 
@@ -383,12 +439,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadSchedule(data) {
         if (!data || !Array.isArray(data.schedule)) return;
 
-        schedule = data.schedule.map(rule => ({
-            day: Number(rule.day),
-            time: String(rule.time || '08:00'),
-            volume: Number(rule.volume),
-            active: Boolean(rule.active)
-        }));
+        schedule = data.schedule.map(rule => {
+            const rawDay = Number(rule.day);
+            return {
+                day: Number.isFinite(rawDay) ? rawDay : 1,
+                time: String(rule.time || '08:00'),
+                volume: Number(rule.volume),
+                active: Boolean(rule.active)
+            };
+        });
 
         sortSchedule();
         renderSchedule();
@@ -420,16 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             schedule.splice(index, 1);
 
-            if (schedule.length === 0) {
-                schedule.push({
-                    day: 1,
-                    time: '08:00',
-                    volume: 500,
-                    active: true
-                });
-            }
-
-            sortSchedule();
+                sortSchedule();
             renderSchedule();
         });
 
@@ -496,20 +546,101 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /*
-    ============================================================
-    НАЧАЛЬНОЕ РАСПИСАНИЕ / ЗАГРУЗКА
-    ============================================================
-    */
+    const wifiForm = document.getElementById('wifi-form');
+    if (wifiForm) {
+        wifiForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
 
-    schedule = [
-        { day: 1, time: '08:00', volume: 500, active: true },
-        { day: 1, time: '18:00', volume: 700, active: true },
-        { day: 3, time: '12:30', volume: 400, active: false }
-    ];
+            const formData = new FormData(wifiForm);
+            const payload = {
+                wifi_mode: formData.get('wifi_mode') || 'STA',
+                ssid: formData.get('ssid') || '',
+                password: formData.get('password') || ''
+            };
 
-    sortSchedule();
-    renderSchedule();
+            const submitBtn = wifiForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn?.textContent || 'Применить';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Сохранение...';
+            }
+
+            try {
+                const response = await fetch('/api/save-wifi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json().catch(() => ({}));
+                if (response.ok && result.status === 'ok') {
+                    alert(result.message || 'Настройки Wi-Fi сохранены. Устройство перезагружается...');
+                } else {
+                    alert(result.message || 'Не удалось сохранить настройки Wi-Fi');
+                }
+            } catch (error) {
+                console.error('Wi-Fi save failed', error);
+                alert('Не удалось отправить запрос на сохранение Wi-Fi');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+            }
+        });
+    }
+
+    function setPumpStatus(active, text) {
+        if (!wateringStatusEl) return;
+        wateringStatusEl.textContent = text || (active ? 'Включен' : 'Выключен');
+        wateringStatusEl.className = active ? 'state-on' : 'state-off';
+    }
+
+    async function loadConfig() {
+        try {
+            const response = await fetch('/api/get-config');
+            if (!response.ok) return;
+
+            const data = await response.json();
+            const modeSelect = document.getElementById('wifi-mode');
+            const ssidInput = document.getElementById('wifi-ssid');
+            const passInput = document.getElementById('wifi-pass');
+
+            if (modeSelect) modeSelect.value = String(data.wifi_mode || 'STA');
+            if (ssidInput) ssidInput.value = String(data.ssid || '');
+            if (passInput) passInput.value = String(data.password || '');
+        } catch (err) {
+            console.warn('Не удалось загрузить конфигурацию Wi-Fi:', err);
+        }
+    }
+
+    async function loadPumpStatus() {
+        try {
+            const response = await fetch('/api/get-status');
+            if (!response.ok) return;
+
+            const data = await response.json();
+            setPumpStatus(Boolean(data.pump_active), data.pump_active ? 'Включен' : 'Выключен');
+        } catch (err) {
+            console.warn('Не удалось загрузить статус насоса:', err);
+        }
+    }
+
+    async function loadScheduleFromServer() {
+        try {
+            const response = await fetch('/api/get-schedule');
+            if (!response.ok) return;
+
+            const data = await response.json();
+            loadSchedule(data);
+        } catch (err) {
+            console.warn('Не удалось загрузить расписание:', err);
+        }
+    }
+
+    await loadConfig();
+    await loadPumpStatus();
+    await loadScheduleFromServer();
 
     /*
     ============================================================
@@ -517,33 +648,41 @@ document.addEventListener('DOMContentLoaded', () => {
     ============================================================
     */
 
-    if (typeof socket !== 'undefined' && socket) {
-        socket.addEventListener('message', (event) => {
-            try {
-                const data = JSON.parse(event.data);
+    function handleSocketMessage(event) {
+        try {
+            const data = JSON.parse(event.data);
 
-                if (data.type === 'schedule_data') {
-                    loadSchedule(data);
-                }
-
-                if (data.type === 'watering_status') {
-                    if (wateringStatusEl) {
-                        wateringStatusEl.textContent = String(data.text || '---');
-                        wateringStatusEl.className = data.active ? 'state-on' : 'state-off';
-                    }
-                }
-
-                if (data.type === 'manual_watering_done') {
-                    if (wateringStatusEl) {
-                        wateringStatusEl.textContent = `Готово: ${data.volume_ml || 0} мл`;
-                        wateringStatusEl.className = 'state-off';
-                    }
-                    syncManualButtonState();
-                }
-            } catch (err) {
-                console.warn('Не удалось разобрать сообщение WebSocket:', err);
+            if (data.type === 'schedule_data') {
+                loadSchedule(data);
             }
-        });
+
+            if (data.type === 'status') {
+                setPumpStatus(Boolean(data.pump_active), data.pump_active ? 'Включен' : 'Выключен');
+            }
+
+            if (data.type === 'watering_status') {
+                if (wateringStatusEl) {
+                    const active = Boolean(data.active);
+                    wateringStatusEl.textContent = active ? String(data.text || 'Включен') : 'Выключен';
+                    wateringStatusEl.className = active ? 'state-on' : 'state-off';
+                }
+            }
+
+            if (data.type === 'manual_watering_done') {
+                if (wateringStatusEl) {
+                    wateringStatusEl.textContent = `Готово: ${data.volume_ml || 0} мл`;
+                    wateringStatusEl.className = 'state-off';
+                }
+                syncManualButtonState();
+            }
+        } catch (err) {
+            console.warn('Не удалось разобрать сообщение WebSocket:', err);
+        }
+    }
+
+    connectWebSocket();
+    if (socket) {
+        socket.addEventListener('message', handleSocketMessage);
     }
 
     // --- 8. УПРАВЛЕНИЕ ОБНОВЛЕНИЕМ ПРОШИВКИ (WEB OTA) ---
@@ -567,28 +706,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     otaForm.addEventListener('submit', (event) => {
-        event.preventDefault(); // Запрещаем стандартное поведение формы
+        event.preventDefault();
 
         const file = otaFileInput.files[0];
         if (!file) return;
 
-        // Формируем данные формы для отправки бинарника
-        //const formData = new FormData();
-        //formData.append('update', file);
-        xhr.open('POST', '/api/update');
-        xhr.setRequestHeader('Content-Type', 'application/octet-stream'); 
-        xhr.send(file);
-
-        // Используем XMLHttpRequest для отслеживания прогресса загрузки по сети
         const xhr = new XMLHttpRequest();
-        
-        // Настраиваем отображение прогресс-бара
+
         otaProgressContainer.style.display = 'block';
         otaSubmitBtn.disabled = true;
         otaFileInput.disabled = true;
         otaStatusText.textContent = 'Загрузка прошивки в память ESP8266...';
 
-        // Отслеживаем прогресс передачи байт
         xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable) {
                 const percentComplete = Math.round((e.loaded / e.total) * 100);
@@ -597,22 +726,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Обработка завершения запроса
         xhr.addEventListener('load', () => {
             try {
-                const result = JSON.parse(xhr.responseText);
+                const result = JSON.parse(xhr.responseText || '{}');
                 if (xhr.status === 200 && result.status === 'ok') {
                     otaStatusText.textContent = '🎉 ' + result.message;
                     otaStatusText.style.color = 'var(--primary-color)';
-                    
-                    // Запускаем обратный отсчет до перезагрузки страницы
+
                     let countdown = 10;
                     const timer = setInterval(() => {
                         countdown--;
                         otaStatusText.textContent = `Перезагрузка HydroNode... Ожидайте ${countdown} сек.`;
                         if (countdown <= 0) {
                             clearInterval(timer);
-                            window.location.reload(); // Перезагружаем страницу
+                            window.location.reload();
                         }
                     }, 1000);
                 } else {
@@ -625,16 +752,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Обработка критических ошибок сети
         xhr.addEventListener('error', () => {
             otaStatusText.textContent = '❌ Критическая ошибка сети при передаче данных.';
             otaStatusText.style.color = 'var(--danger-color)';
             resetOtaForm();
         });
 
-        // Отправляем асинхронный POST запрос на ESP
         xhr.open('POST', '/api/update');
-        xhr.send(formData);
+        xhr.send(file);
     });
 
     // Функция сброса формы при ошибках

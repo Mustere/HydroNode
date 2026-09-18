@@ -14,6 +14,7 @@ void initScheduler() {
     // Сначала заполняем массив дефолтными пустыми значениями
     for (int i = 0; i < MAX_SCHEDULE_SLOTS; i++) {
         schedule[i].id = i + 1;
+        schedule[i].day = 1;
         schedule[i].time = "00:00";
         schedule[i].volume = 0;
         schedule[i].active = false;
@@ -28,13 +29,15 @@ void initScheduler() {
             DeserializationError error = deserializeJson(doc, configFile);
             configFile.close();
 
-            if (!error && doc.containsKey("schedule")) {
+            if (!error && doc["schedule"].is<JsonArray>()) {
                 JsonArray arr = doc["schedule"].as<JsonArray>();
                 int index = 0;
                 for (JsonVariant v : arr) {
                     if (index >= MAX_SCHEDULE_SLOTS) break;
-                    
+
                     schedule[index].id = v["id"] | (index + 1);
+                    int loadedDay = v["day"].is<int>() ? v["day"].as<int>() : 1;
+                    schedule[index].day = loadedDay;
                     schedule[index].time = v["time"] | "00:00";
                     schedule[index].volume = v["volume"] | 0;
                     schedule[index].active = v["active"] | false;
@@ -63,24 +66,37 @@ bool saveScheduleConfig(JsonArray jsonArray) {
 
     // 2. Полностью перезаписываем или создаем ветку "schedule" в JSON
     doc.remove("schedule"); // Удаляем старое, если было
-    JsonArray schedTarget = doc.createNestedArray("schedule");
+    JsonArray schedTarget = doc["schedule"].to<JsonArray>();
 
     int index = 0;
     for (JsonVariant v : jsonArray) {
         if (index >= MAX_SCHEDULE_SLOTS) break;
 
-        JsonObject slotObj = schedTarget.createNestedObject();
+        JsonObject slotObj = schedTarget.add<JsonObject>();
         slotObj["id"] = v["id"] | (index + 1);
+        int storedDay = v["day"].is<int>() ? v["day"].as<int>() : 1;
+        slotObj["day"] = storedDay;
         slotObj["time"] = v["time"] | "00:00";
         slotObj["volume"] = v["volume"] | 0;
         slotObj["active"] = v["active"] | false;
 
         // Также сразу обновляем данные в оперативной памяти (ОЗУ)
         schedule[index].id = slotObj["id"];
+        schedule[index].day = slotObj["day"];
         schedule[index].time = slotObj["time"].as<String>();
         schedule[index].volume = slotObj["volume"];
         schedule[index].active = slotObj["active"];
         index++;
+    }
+
+    // Очищаем оставшиеся ячейки расписания, если их стало меньше
+    for (; index < MAX_SCHEDULE_SLOTS; index++) {
+        schedule[index].id = index + 1;
+        schedule[index].day = 1;
+        schedule[index].time = "00:00";
+        schedule[index].volume = 0;
+        schedule[index].active = false;
+        schedule[index].lastWateredDay = 0;
     }
 
     // 3. Записываем объединенный JSON обратно во Flash
@@ -130,6 +146,9 @@ void checkScheduler() {
     for (int i = 0; i < MAX_SCHEDULE_SLOTS; i++) {
         // Пропускаем неактивные или пустые ячейки
         if (!schedule[i].active || schedule[i].volume <= 0) continue;
+
+        // Запускаем ячейку только в указанный день недели (tm_wday: 0 = воскресенье)
+        if (schedule[i].day != timeInfo->tm_wday) continue;
 
         // Парсим строку времени сохраненной ячейки (например, "14:30") в числа
         int targetHour = schedule[i].time.substring(0, 2).toInt();
