@@ -1,0 +1,9 @@
+{
+  "wifi_mode": "AP",
+  "ssid": "HydroNode_AP",
+  "password": "12345678",
+
+  "schedule": [],
+
+  "version": 1
+}

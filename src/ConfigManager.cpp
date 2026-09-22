@@ -16,10 +16,14 @@ bool initConfig() {
 }
 
 bool loadConfig() {
+    currentConfig.mode = "AP";
+    currentConfig.ssid = "HydroNode_AP";
+    currentConfig.password = "12345678";
+
     File configFile = LittleFS.open(CONFIG_FILE, "r");
     if (!configFile) {
-        Serial.println("[Config] Не удалось открыть файл конфигурации для чтения");
-        return false;
+        Serial.println("[Config] Файл не найден. Используем дефолт.");
+        return false; // Теперь вернет false, но config уже заполнен безопасными данными!
     }
 
     JsonDocument doc;
@@ -27,11 +31,10 @@ bool loadConfig() {
     configFile.close();
 
     if (error) {
-        Serial.println("[Config] Ошибка парсинга JSON конфигурации");
-        return false;
+        Serial.println("[Config] Ошибка парсинга JSON. Используем дефолт.");
+        return false; 
     }
 
-    // Загружаем данные в оперативную память
     currentConfig.mode = doc["wifi_mode"] | "AP";
     currentConfig.ssid = doc["ssid"] | "HydroNode_AP";
     currentConfig.password = doc["password"] | "12345678";
@@ -39,6 +42,7 @@ bool loadConfig() {
     Serial.println("[Config] Конфигурация успешно загружена из Flash");
     return true;
 }
+
 
 bool saveWiFiConfig(const String& mode, const String& ssid, const String& password) {
     JsonDocument doc;

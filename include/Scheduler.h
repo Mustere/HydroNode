@@ -10,6 +10,7 @@ const int MAX_SCHEDULE_SLOTS = 35;
 // Структура для одной ячейки расписания
 struct ScheduleSlot {
     int id;           // Номер ячейки (1..MAX)
+    int day;          // День недели (0 = Воскресенье, 1 = Понедельник, ...)
     String time;      // Время в формате "HH:MM"
     int volume;       // Объем воды в мл
     bool active;      // Флаг активности таймера
