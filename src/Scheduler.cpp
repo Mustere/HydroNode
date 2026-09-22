@@ -214,4 +214,3 @@ bool markSlotAsWatered(int slotId, uint32_t dayOfYear) {
     schedule[slotId - 1].lastWateredDay = dayOfYear; 
     return true;
 }
-
